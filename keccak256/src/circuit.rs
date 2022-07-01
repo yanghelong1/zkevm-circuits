@@ -697,8 +697,7 @@ impl<F: Field> KeccakConfig<F> {
         let absorb_inputs = layouter.assign_region(
             || "Assign perm_absorb inputs",
             |mut region| {
-                let absorb_inputs: [AssignedCell<F, F>; NEXT_INPUTS_BYTES] = (1..NEXT_INPUTS_BYTES
-                    + 1)
+                let absorb_inputs: [AssignedCell<F, F>; NEXT_INPUTS_BYTES] = (0..NEXT_INPUTS_BYTES)
                     .map(|idx| -> Result<AssignedCell<F, F>, Error> {
                         region.assign_advice(
                             || "input_state init",
@@ -969,7 +968,7 @@ mod tests {
                 115, 32, 111, 114, 32, 99, 111, 110, 118, 101, 114, 115, 97, 116, 105, 111, 110,
                 115, 63,
             ];
-            1000
+            1
         ];
         let output = [
             60u8, 227, 142, 8, 143, 135, 108, 85, 13, 254, 190, 58, 30, 106, 153, 194, 188, 6, 208,
