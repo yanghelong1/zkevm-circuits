@@ -21,6 +21,8 @@ impl<F: Field, const N: usize> RlcConfig<F, N> {
     pub fn configure(
         meta: &mut ConstraintSystem<F>,
         witness: [Column<Advice>; N],
+        // This is a tmp solution until we get the challenge API.
+        // For now a dummy value is passed and never used.
         randomness: Column<Advice>,
         rlc: Column<Advice>,
     ) -> RlcConfig<F, N> {
@@ -29,12 +31,13 @@ impl<F: Field, const N: usize> RlcConfig<F, N> {
             // Query witnesses to accumulate in the RLC
             let witness: [Expression<F>; N] =
                 witness.map(|w| meta.query_advice(w, Rotation::cur()));
-            let randomness = meta.query_advice(randomness, Rotation::cur());
+
+            // Here we should query_challenge and get the randomness
 
             // Query resulting RLC result
             let result = meta.query_advice(rlc, Rotation::cur());
 
-            let obtained_result = rlc::compose::<F, N>(&witness, randomness);
+            let obtained_result = rlc::compose::<F, N>(&witness);
             let q_enable = meta.query_selector(q_enable);
 
             vec![q_enable * (obtained_result - result)]
@@ -148,8 +151,7 @@ mod rlc_tests {
     struct MyConfig<F: Field, const N: usize> {
         rlc_config: RlcConfig<F, N>,
         q_enable: Selector,
-        randomness: Column<Instance>,
-        randomness_adv: Column<Advice>,
+        randomness: Column<Advice>,
         witness: [Column<Advice>; N],
         rlc: Column<Advice>,
     }
@@ -169,16 +171,13 @@ mod rlc_tests {
                 col
             });
 
-            let randomness = meta.instance_column();
+            let randomness = meta.advice_column();
             meta.enable_equality(randomness);
 
             let rlc = meta.advice_column();
             meta.enable_equality(rlc);
 
-            let randomness_adv = meta.advice_column();
-            meta.enable_equality(randomness_adv);
-
-            let rlc_config = RlcConfig::configure(meta, witness, randomness_adv, rlc);
+            let rlc_config = RlcConfig::configure(meta, witness, randomness, rlc);
             meta.create_gate("Constrain output", |meta| {
                 let obtained_rlc = meta.query_advice(rlc, Rotation::cur());
                 let result_rlc = meta.query_advice(rlc, Rotation::next());
@@ -190,7 +189,6 @@ mod rlc_tests {
                 rlc_config,
                 q_enable,
                 randomness,
-                randomness_adv,
                 witness,
                 rlc,
             }
@@ -228,12 +226,11 @@ mod rlc_tests {
             let randomness = layouter.assign_region(
                 || "RLC randomness",
                 |mut region| {
-                    region.assign_advice_from_instance(
+                    region.assign_advice(
                         || "RLC randomness",
                         config.randomness,
                         0usize,
-                        config.randomness_adv,
-                        0usize,
+                        || Ok(F::one()),
                     )
                 },
             )?;

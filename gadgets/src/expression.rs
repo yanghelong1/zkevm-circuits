@@ -87,21 +87,20 @@ pub mod rlc {
     /// and randomness.
     /// It also computes the powers of the randomness needed to compute the RLC
     /// for the entire expr set.
-    pub fn compose<F: Field, const N: usize>(
-        expressions: &[Expression<F>],
-        mut randomness: Expression<F>,
-    ) -> Expression<F> {
-        let og_rand = randomness.clone();
+    pub fn compose<F: Field, const N: usize>(expressions: &[Expression<F>]) -> Expression<F> {
+        // TODO: Replace for a randomness expr passed by params once the Challenge API
+        // is ready.
+        let og_rand = Expression::Constant(F::one());
         let mut rlc = expressions[0].clone();
         for expression in expressions[1..].iter() {
-            rlc = rlc + expression.clone() * randomness.clone();
-            randomness = randomness * og_rand.clone();
+            rlc = (rlc * og_rand.clone()) + expression.clone();
         }
         rlc
     }
 
     /// Generate an Expression which computes the RLC for the given expressions
     /// and randomness.
+    /// // TODO: fix this too
     pub fn compose_with_powers<F: Field, const N: usize>(
         expressions: &[Expression<F>],
         powers_of_randomness: &[Expression<F>],

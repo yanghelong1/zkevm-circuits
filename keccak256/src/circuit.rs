@@ -911,13 +911,15 @@ mod tests {
     use halo2_proofs::{circuit::SimpleFloorPlanner, dev::MockProver, plonk::Circuit};
     use pretty_assertions::assert_eq;
     use std::convert::TryInto;
+    use std::marker::PhantomData;
     #[derive(Default, Clone)]
-    struct KeccakTestCircuit {
+    struct KeccakTestCircuit<F: Field> {
         input: Vec<Vec<u8>>,
         output: [u8; 32],
+        _data: PhantomData<F>,
     }
 
-    impl<F: Field> Circuit<F> for KeccakTestCircuit {
+    impl<F: Field> Circuit<F> for KeccakTestCircuit<F> {
         type Config = KeccakConfig<F>;
         type FloorPlanner = V1;
 
@@ -968,6 +970,7 @@ mod tests {
                 115, 32, 111, 114, 32, 99, 111, 110, 118, 101, 114, 115, 97, 116, 105, 111, 110,
                 115, 63,
             ];
+            // You can edit the permutations done here. Each increase is `x3` due to the fact that this input leads to 3 permutations.
             1
         ];
         let output = [
@@ -976,7 +979,23 @@ mod tests {
         ];
 
         // Build the circuit
-        let circuit = KeccakTestCircuit { input, output };
+        let circuit = KeccakTestCircuit::<Fp> {
+            input,
+            output,
+            _data: PhantomData,
+        };
+
+        //#[cfg(feature = "dev-graph")]
+        {
+            use plotters::prelude::*;
+            let root =
+                BitMapBackend::new("full_keccak_6perm.png", (1 << 13, 1 << 17)).into_drawing_area();
+            root.fill(&WHITE).unwrap();
+            let root = root.titled("Keccak Circuit", ("sans-serif", 60)).unwrap();
+            halo2_proofs::dev::CircuitLayout::default()
+                .render(18, &circuit, &root)
+                .unwrap()
+        }
         let prover = MockProver::<Fp>::run(17, &circuit, vec![]).unwrap();
         assert!(prover.verify().is_err());
     }
