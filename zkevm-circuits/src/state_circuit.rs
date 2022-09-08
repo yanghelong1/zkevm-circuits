@@ -345,7 +345,7 @@ where
                 )?;
                 #[cfg(test)]
                 {
-                    let padding_length = RwMap::padding_len(&self.rows, self.n_rows);
+                    let padding_length = RwMap::padding_len(self.rows.len(), self.n_rows);
                     for ((column, row_offset), &f) in &self.overrides {
                         let advice_column = column.value(&config);
                         let offset =
@@ -544,8 +544,8 @@ mod state_circuit_stats {
                 )
                 .unwrap()
                 .into();
-                let mut builder =
-                    BlockData::new_from_geth_data(block.clone()).new_circuit_input_builder();
+                let mut builder = BlockData::new_from_geth_data_default(block.clone())
+                    .new_circuit_input_builder();
                 builder
                     .handle_block(&block.eth_block, &block.geth_traces)
                     .unwrap();
