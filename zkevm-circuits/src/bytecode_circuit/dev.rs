@@ -47,6 +47,7 @@ impl<F: Field> Circuit<F> for BytecodeCircuitTester<F> {
             &mut layouter,
             self.bytecodes.iter().map(|b| &b.bytes),
             &challenges,
+            true,
         )?;
         config.assign_internal(
             &mut layouter,
