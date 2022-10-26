@@ -18,6 +18,6 @@ while true; do
             exit 0
         fi
     else
-        sleep 30
+        sleep 29
     fi
 done
